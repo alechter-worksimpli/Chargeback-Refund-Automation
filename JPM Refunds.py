@@ -19,7 +19,6 @@ from IPython.display import display
 # 3) Including checks to ensure I'm pulling correct values in case they change around table or other definitions
 #   i.e. take a screenshot and a make sure it looks close enough
 
-
 PATH = '/Users/adrianlechter/Downloads/chromedriver_2'
 
 #Create chromedriver object and visit JPM website
@@ -27,97 +26,66 @@ driver = webdriver.Chrome(PATH)
 time.sleep(random.uniform(2.5,5))
 driver.get('https://saltpayments.transactiongateway.com/merchants/login.php')
 
-#Input username
-login = driver.find_element_by_name('username')
-login.send_keys("jpmorgan-USD")
-time.sleep(random.uniform(0.5,3))
-
-# #Input password
-password = driver.find_element_by_name('password')
-password.send_keys("Marketing123!")
-time.sleep(random.uniform(0.5,3))
-
-#Press "enter"
-enter_button_login = driver.find_element_by_id('merchant_login_submit_button')
-enter_button_login.click()
-time.sleep(random.uniform(4,7)) #Let login load
-
-#Click transaction button
-transactions_button = driver.find_element_by_css_selector('#merchant-home > div:nth-child(2) > div:nth-child(2) > div > div.actions__links > a:nth-child(1)')
-transactions_button.click()
-time.sleep(random.uniform(3,5)) #Let next page load
-
-#Clear the start field and insert start date value
-start_date_field = driver.find_element_by_id('snapshot-date-start')
-start_date_field.clear()
-start_date_field.send_keys('6/7/2021')
-time.sleep(random.uniform(0.5,2)) #Wait to load
-
-#Clear the end field and insert end date value
-end_date_field = driver.find_element_by_id('snapshot-date-end')
-end_date_field.clear()
-end_date_field.send_keys('6/13/2021')
-time.sleep(random.uniform(0.5,2)) #Wait to load
-
-#Click submit button
-submit_date_button = driver.find_element_by_id("SnapshotSubmit")
-submit_date_button.click()
-time.sleep(random.uniform(2,5)) #Wait to load
+dictionary_of_scraper_navigation = {'login':['username', 'jpmorgan-USD'], 
+                                 'password': ['password', 'Marketing123!'],
+                                 'enter_button': ['merchant_login_submit_button'], 
+                                 'transactions_button': ['#merchant-home > div:nth-child(2) > div:nth-child(2) > div > div.actions__links > a:nth-child(1)'],
+                                 'start_date_field': ['snapshot-date-start', '6/7/2021'], 
+                                 'end_date_field': ['snapshot-date-end', '6/13/2021'],
+                                 'submit_date_button': ['SnapshotSubmit']}
 
 
-datetimes_on_table_list = []
-charges_count_on_table_list = []
-charges_amount_on_table_list = []
-refunds_count_on_table_list = []
-refunds_amount_on_table_list = []
+for event_name_key, actions_list_value in dictionary_of_scraper_navigation.items():
 
-datetimes_on_table = driver.find_elements_by_xpath('//tbody/tr/td[2]/b/small')
+    if event_name_key in ['login', 'password']:
+        website_object = driver.find_element_by_name(actions_list_value[0])
+        website_object.send_keys(actions_list_value[1])
+        time.sleep(random.uniform(0.5,3))
 
-for datetime in datetimes_on_table:
-    # print(datetime.text)
-    datetimes_on_table_list.append(datetime.text)
+    elif event_name_key in ['enter_button', 'start_date_field', 'end_date_field', 'submit_date_button']:
+        website_object = driver.find_element_by_id(actions_list_value[0])
 
-charges_count_on_table = driver.find_elements_by_xpath('//tbody/tr/td[3]/small')
+        if event_name_key in ['enter_button', 'submit_date_button']:
+            website_object.click()
 
-for charges_count in charges_count_on_table:
-    # print(charges_count.text)
-    charges_count_on_table_list.append(charges_count.text)
+            if event_name_key == 'enter_button':
+                time.sleep(random.uniform(4,7))
 
-charges_amount_on_table = driver.find_elements_by_xpath('//tbody/tr/td[4]/small')
+            else:
+                time.sleep(random.uniform(2,5))
 
-for charges_amount in charges_amount_on_table:
-    # print(charges_amount.text)
-    charges_amount_on_table_list.append(charges_amount.text)
+        elif event_name_key in ['start_date_field', 'end_date_field']:
+            website_object.clear()
+            website_object.send_keys(actions_list_value[1])
+            time.sleep(random.uniform(0.5,2))
+    
+    else:
+        website_object = driver.find_element_by_css_selector(actions_list_value[0])
+        website_object.click()
+        time.sleep(random.uniform(3,5)) #Let next page load
 
-refunds_count_on_table = driver.find_elements_by_xpath('//tbody/tr/td[5]/small')
+dictionary_of_dataframe_scraping = {'datetime': ['//tbody/tr/td[2]/b/small', []], 
+                                    'charges_count': ['//tbody/tr/td[3]/small', []], 
+                                    'charges_amount': ['//tbody/tr/td[4]/small', []], 
+                                    'refunds_count': ['//tbody/tr/td[5]/small', []],
+                                    'refunds_amount': ['//tbody/tr/td[6]/small', []]}
 
-for refunds_count in refunds_count_on_table:
-    # print(refunds_count.text)
-    refunds_count_on_table_list.append(refunds_count.text)
 
-refunds_amount_on_table = driver.find_elements_by_xpath('//tbody/tr/td[6]/small')
+for event_name_key, actions_list_value in dictionary_of_dataframe_scraping.items():
+    scraping_column = driver.find_elements_by_xpath(actions_list_value[0])
 
-for refunds_amount in refunds_amount_on_table:
-    # print(refunds_amount.text)
-    refunds_amount_on_table_list.append(refunds_amount.text)
+    for row in scraping_column:
+        actions_list_value[1].append(row.text)
 
-dictionary_of_jpm_table_values = {'Datetime': datetimes_on_table_list,
-                                  'Charges Count': charges_count_on_table_list,
-                                  'Charges Amount': charges_amount_on_table_list,
-                                  'Refunds Count': refunds_count_on_table_list,
-                                  'Refunds Amount': refunds_amount_on_table_list}
-
-# display('Datetime list has {} rows'.format(len(datetimes_on_table_list)))
-# display('Charges count list has {} rows'.format(len(charges_count_on_table_list)))
-# display('Charges Amount list has {} rows'.format(len(charges_amount_on_table_list)))
-# display('Refunds count list has {} rows'.format(len(refunds_count_on_table_list)))
-# display('Refunds amount list has {} rows'.format(len(refunds_amount_on_table_list)))
+dictionary_of_jpm_table_values = {'Datetime': dictionary_of_dataframe_scraping.get('datetime')[1],
+                                  'Charges Count': dictionary_of_dataframe_scraping.get('charges_count')[1],
+                                  'Charges Amount': dictionary_of_dataframe_scraping.get('charges_amount')[1],
+                                  'Refunds Count': dictionary_of_dataframe_scraping.get('refunds_count')[1],
+                                  'Refunds Amount': dictionary_of_dataframe_scraping.get('refunds_amount')[1]}
 
 df_jpm_refund_table = pd.DataFrame(dictionary_of_jpm_table_values)
 
 display(df_jpm_refund_table.head())
 display(' ')
 display(' ')
-display(df_jpm_refund_table.tail())
-
-
+display(df_jpm_refund_table.tail())                                 
